@@ -1,9 +1,9 @@
-import TanStackTable from "@/components/ui/tank-stack-table"
+import VoucherTable from "../../ui/tables/voucherTable"
 
 const VoucherAiBody = () => {
   return (
     <div className="w-full h-full flex flex-1 bg-background">
-      <TanStackTable data={[]} columns={[]} remixIconClass="ri-file-list-line" emptyMessage="No hay datos registrados" />
+      <VoucherTable />
     </div>
   )
 }

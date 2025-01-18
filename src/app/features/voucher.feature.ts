@@ -2,6 +2,7 @@
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit" 
 import { config } from "@/config/api"
+import { VoucherType } from "../types/voucher.type"
 
 export const scanVoucherFeature = createAsyncThunk(
   "voucher/scanVoucherFeature",
@@ -22,10 +23,28 @@ export const scanVoucherFeature = createAsyncThunk(
   }
 )
 
+export const getVouchersFeature = createAsyncThunk(
+  "voucher/getVouchersFeature",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`${config.BACK_URL}/voucher/`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+      const data = await response.json()
+      return data
+    } catch (error: any) {
+      return rejectWithValue(error.message)
+    }
+  }
+)
+
 const voucherSlice = createSlice({
   name: "voucher",
   initialState: {
-    vouchers: [],
+    vouchers: [] as VoucherType[],
     loadingScanVoucher: false,
     loadingCreateVoucher: false,
     loadingEditVoucher: false,
@@ -44,13 +63,24 @@ const voucherSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    builder.addCase(getVouchersFeature.pending, (state) => {
+      state.loading = true
+      state.error = null
+    })
+    builder.addCase(getVouchersFeature.fulfilled, (state, action) => {
+      state.loading = false
+      state.vouchers = action.payload
+    })
+    builder.addCase(getVouchersFeature.rejected, (state) => {
+      state.loading = false
+    })
     builder.addCase(scanVoucherFeature.pending, (state) => {
       state.loading = true
       state.error = null
     })
     builder.addCase(scanVoucherFeature.fulfilled, (state, action) => {
       state.loading = false
-      state.vouchers = action.payload
+      state.vouchers.push(action.payload)
     })
     builder.addCase(scanVoucherFeature.rejected, (state) => {
       state.loading = false

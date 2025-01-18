@@ -23,7 +23,6 @@ const VoucherAiDialog = ({ id }: DialogProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [text, setText] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const dispatch = useDispatch<AppDispatch>()
@@ -64,7 +63,7 @@ const VoucherAiDialog = ({ id }: DialogProps) => {
 
   const toggleDialog = useToggle(false)
 
-  const onScanFile = async() => {
+  const onScanFile = async () => {
     try {
       if (!file) return;
       const { data: { text } } = await Tesseract.recognize(
@@ -74,23 +73,19 @@ const VoucherAiDialog = ({ id }: DialogProps) => {
           logger: (m) => console.log(m),
         }
       )
-      setText(text);
+      if (!text) return;
+      dispatch(scanVoucherFeature(text))
     } catch (error) {
       console.error(error);
     }
-
-    if (!text) return;
-    dispatch(scanVoucherFeature(text))
   }
 
-  console.log(text)
 
   useEffect(() => {
     if (!toggleDialog.isOpen) {
       setIsDragging(false);
       setFile(null);
       setFileUrl(null);
-      setText(null);
     }
   }, [toggleDialog])
   return (
