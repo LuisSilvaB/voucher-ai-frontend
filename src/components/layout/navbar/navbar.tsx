@@ -5,7 +5,7 @@ const Navbar = () => {
   return (
     <nav
       className={cn(
-        "w-full flex items-center h-[50px] p-2 text-xl bg-background justify-between border"
+        "w-full flex items-center h-[50px] p-2 px-3 text-xl bg-background justify-between border"
       )}
     >
         <p className={cn(' text-xl text-button', concertOne.className)}>SMART VOUCHER</p> 

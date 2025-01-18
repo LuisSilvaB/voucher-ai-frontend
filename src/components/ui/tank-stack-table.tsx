@@ -13,8 +13,6 @@ import {
 } from "@tanstack/react-table";
 import Icon from '@/components/ui/icon';
 import TankStackPagination from "./tank-stack-pagination";
-import { useSelector } from "react-redux";
-import { RootState } from "@/redux/store";
 
 type TableProps<TData> = {
   data: TData[];

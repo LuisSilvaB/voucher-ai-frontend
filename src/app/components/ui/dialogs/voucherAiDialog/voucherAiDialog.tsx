@@ -1,11 +1,19 @@
-import useToggle from '@/app/hooks/useToggle.hook';
+import React, { useState, ChangeEvent, DragEvent, useEffect, useRef } from 'react'
+
 import { Dialog, DialogFooter, DialogHeader, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
-import Icon from '@/components/ui/icon'
-import React, { useState, ChangeEvent, DragEvent, useEffect, useRef } from 'react'
 import { DialogDescription } from '@radix-ui/react-dialog';
+import Icon from '@/components/ui/icon'
+
+import { useDispatch } from 'react-redux';
+import { AppDispatch } from '@/redux/store';
+
+import { scanVoucherFeature } from '@/app/features/voucher.feature';
+
+import useToggle from '@/app/hooks/useToggle.hook';
 import { cn } from '@/lib/utils';
+import Tesseract from 'tesseract.js';
 
 type DialogProps = {
   id?: string;
@@ -15,7 +23,10 @@ const VoucherAiDialog = ({ id }: DialogProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [text, setText] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const dispatch = useDispatch<AppDispatch>()
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -48,16 +59,38 @@ const VoucherAiDialog = ({ id }: DialogProps) => {
 
   const handleClick = () => {
     if (!fileInputRef.current) return;
-    fileInputRef.current.click(); // Abre el selector de archivos
+    fileInputRef.current.click(); 
   }
 
   const toggleDialog = useToggle(false)
+
+  const onScanFile = async() => {
+    try {
+      if (!file) return;
+      const { data: { text } } = await Tesseract.recognize(
+        file,
+        'spa+eng',
+        {
+          logger: (m) => console.log(m),
+        }
+      )
+      setText(text);
+    } catch (error) {
+      console.error(error);
+    }
+
+    if (!text) return;
+    dispatch(scanVoucherFeature(text))
+  }
+
+  console.log(text)
 
   useEffect(() => {
     if (!toggleDialog.isOpen) {
       setIsDragging(false);
       setFile(null);
       setFileUrl(null);
+      setText(null);
     }
   }, [toggleDialog])
   return (
@@ -159,7 +192,7 @@ const VoucherAiDialog = ({ id }: DialogProps) => {
         </div>
         <DialogFooter>
           <Button variant={"secondary"}>Cancel</Button>
-          <Button variant={"default"} className="bg-button hover:bg-buttonText">
+          <Button variant={"default"} className="bg-button hover:bg-buttonText" onClick={onScanFile}>
             Scan
           </Button>
         </DialogFooter>
