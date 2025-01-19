@@ -4,19 +4,43 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import { config } from "@/config/api"
 import { VoucherType } from "../types/voucher.type"
 
-export const scanVoucherFeature = createAsyncThunk(
+export const scanVoucherTesseractFeature = createAsyncThunk(
   "voucher/scanVoucherFeature",
   async (
-    { text, file }: { text: string; file: File },
+    { text }: { text: string },
     { rejectWithValue }
   ) => {
     try {
       const formData = new FormData();
       formData.append("text", text);
-      formData.append("file", file);
-      console.log(formData)
+      const response = await fetch(`${config.BACK_URL}/voucher/scan-tesseract`, {
+        method: "POST",
+        body: formData,
+      });
 
-      const response = await fetch(`${config.BACK_URL}/voucher/scan`, {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+export const createVoucherFeature = createAsyncThunk(
+  "voucher/createVoucherFeature",
+  async (
+    { voucher, File }: { voucher: VoucherType, File: File },
+    { rejectWithValue }
+  ) => {
+    try {
+      const formData = new FormData();
+      formData.append("voucher", JSON.stringify(voucher));
+      formData.append("file", File);
+      const response = await fetch(`${config.BACK_URL}/voucher/create-voucher`, {
         method: "POST",
         body: formData,
       });
@@ -81,7 +105,7 @@ const voucherSlice = createSlice({
   name: "voucher",
   initialState: {
     vouchers: [] as VoucherType[],
-    loadingScanVoucher: false,
+    loadingScanTesseract: false,
     loadingCreateVoucher: false,
     loadingEditVoucher: false,
     loadingDeleteVoucher: false,
@@ -111,16 +135,24 @@ const voucherSlice = createSlice({
     builder.addCase(getVouchersFeature.rejected, (state) => {
       state.loading = false
     })
-    builder.addCase(scanVoucherFeature.pending, (state) => {
-      state.loadingCreateVoucher = true
-      state.error = null
+    builder.addCase(scanVoucherTesseractFeature.pending, (state) => {
+      state.loadingScanTesseract = true;
     })
-    builder.addCase(scanVoucherFeature.fulfilled, (state, action) => {
-      state.loadingCreateVoucher = false
-      state.vouchers.push(action.payload)
+    builder.addCase(scanVoucherTesseractFeature.fulfilled, (state) => {
+      state.loadingScanTesseract = false;
     })
-    builder.addCase(scanVoucherFeature.rejected, (state) => {
-      state.loadingCreateVoucher = false
+    builder.addCase(scanVoucherTesseractFeature.rejected, (state) => {
+      state.loadingScanTesseract = false;
+    })
+    builder.addCase(createVoucherFeature.pending, (state) => {
+      state.loadingCreateVoucher = true;
+    })
+    builder.addCase(createVoucherFeature.fulfilled, (state, action) => {
+      state.loadingCreateVoucher = false;
+      state.vouchers.push(action.payload);
+    })
+    builder.addCase(createVoucherFeature.rejected, (state) => {
+      state.loadingCreateVoucher = false;
     })
     builder.addCase(deleteVoucherFeature.pending, (state) => {
       state.loadingDeleteVoucher = true

@@ -1,6 +1,6 @@
 export type VoucherType = { 
-  id: string;
-  created_at: string;
+  id?: string;
+  created_at?: string;
   transaction_number: string;
   date: string;
   total: number;
@@ -12,9 +12,9 @@ export type VoucherType = {
 };
 
 export type ItemType = {
+  id?:number
   code: string;
   name: string;
   quantity: number;
   unit_price: number; 
-  total: number;
 }
