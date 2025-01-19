@@ -3,13 +3,14 @@ import { Dialog, DialogFooter, DialogHeader, DialogContent, DialogTitle } from '
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
 import useToggle from '@/app/hooks/useToggle.hook'
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from '@/redux/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/redux/store';
 import Icon from '@/components/ui/icon';
 import { Button } from '@/components/ui/button';
 import { VoucherType } from '@/app/types/voucher.type';
 import { config } from '@/config/api';
 import { deleteVoucherFeature } from '@/app/features/voucher.feature';
+import { toast } from 'react-toastify';
 
 type DialogProps = {
   voucher: VoucherType;
@@ -18,17 +19,28 @@ type DialogProps = {
 const DeleteVaucherDialog = ({ voucher }: DialogProps) => {
   const dispatch = useDispatch<AppDispatch>()
   const toggleDeleteDialog = useToggle(false)
+  const loadingDeleteVoucher = useSelector((state: RootState) => state.voucher.loadingDeleteVoucher)
 
   const onDeleteVoucher = async () => {
     try {
+      toast.loading("Deleting Voucher...", {
+        toastId: "delete-voucher",
+        position: "bottom-right",
+      })
       if (!voucher) return;
       await dispatch(
         deleteVoucherFeature({
-          id: voucher.id,
+          id: voucher.id ?? '',
         })
       );
+      toast.dismiss("delete-voucher");
+      toast.success("Voucher deleted successfully!", {
+        toastId: "delete-voucher-done",
+        position: "bottom-right",
+      });
     } catch (error) {
       console.error(error);
+      toast.dismiss("delete-voucher");
     }
   }
 
@@ -123,7 +135,10 @@ const DeleteVaucherDialog = ({ voucher }: DialogProps) => {
             className="bg-button hover:bg-buttonText text-white font-medium py-2 px-4 rounded-lg"
             onClick={onDeleteVoucher}
           >
-            Delete
+            {loadingDeleteVoucher ? <Icon remixIconClass='ri-loader-line' size='md' color='white' className='animate-spin' /> : null}
+            <span>
+              Delete
+            </span>
           </Button>
         </DialogFooter>
       </DialogContent>
