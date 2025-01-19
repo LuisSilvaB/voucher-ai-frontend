@@ -6,22 +6,58 @@ import { VoucherType } from "../types/voucher.type"
 
 export const scanVoucherFeature = createAsyncThunk(
   "voucher/scanVoucherFeature",
-  async (text: string, { rejectWithValue }) => {
+  async (
+    { text, file }: { text: string; file: File },
+    { rejectWithValue }
+  ) => {
     try {
+      const formData = new FormData();
+      formData.append("text", text);
+      formData.append("file", file);
+      console.log(formData)
+
       const response = await fetch(`${config.BACK_URL}/voucher/scan`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ text }),
-      })
-      const data = await response.json()
-      return data
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
     } catch (error: any) {
-      return rejectWithValue(error.message)
+      return rejectWithValue(error.message);
     }
   }
-)
+);
+
+export const deleteVoucherFeature = createAsyncThunk(
+  "voucher/deleteVoucherFeature",
+  async (
+    { id }: { id: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await fetch(
+        `${config.BACK_URL}/voucher/delete-voucher?id=${id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 
 export const getVouchersFeature = createAsyncThunk(
   "voucher/getVouchersFeature",
@@ -48,6 +84,7 @@ const voucherSlice = createSlice({
     loadingScanVoucher: false,
     loadingCreateVoucher: false,
     loadingEditVoucher: false,
+    loadingDeleteVoucher: false,
     loading: false,
     error: null,
   },
@@ -75,15 +112,27 @@ const voucherSlice = createSlice({
       state.loading = false
     })
     builder.addCase(scanVoucherFeature.pending, (state) => {
-      state.loading = true
+      state.loadingCreateVoucher = true
       state.error = null
     })
     builder.addCase(scanVoucherFeature.fulfilled, (state, action) => {
-      state.loading = false
+      state.loadingCreateVoucher = false
       state.vouchers.push(action.payload)
     })
     builder.addCase(scanVoucherFeature.rejected, (state) => {
-      state.loading = false
+      state.loadingCreateVoucher = false
+    })
+    builder.addCase(deleteVoucherFeature.pending, (state) => {
+      state.loadingDeleteVoucher = true
+      state.error = null
+    })
+    builder.addCase(deleteVoucherFeature.fulfilled, (state, action) => {
+      state.loadingDeleteVoucher = false
+      console.log(action.payload)
+      state.vouchers = state.vouchers.filter((voucher) => voucher.id !== action.payload[0].id)
+    })
+    builder.addCase(deleteVoucherFeature.rejected, (state) => {
+      state.loadingDeleteVoucher = false
     })
   },
 })

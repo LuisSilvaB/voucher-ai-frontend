@@ -1,19 +1,24 @@
 import { VoucherType } from '@/app/types/voucher.type'
 import TanStackTable from '@/components/ui/tank-stack-table'
+import { config } from '@/config/api'
 import { RootState } from '@/redux/store'
 import { createColumnHelper } from '@tanstack/react-table'
 import { useSelector } from 'react-redux'
+import moment from 'moment-timezone';
+import { DeleteVaucherDialog } from '../dialogs/deleteVaucherDialog'
 
 const VoucherTable = () => {
   const vouchers = useSelector((state:RootState) => state.voucher.vouchers)
   const columnHelper = createColumnHelper<VoucherType>()
   const columns = [
-    columnHelper.accessor('id', {
-      header: 'ID',
-      cell: (info) => info.getValue(),
+    columnHelper.accessor('img_name', {
+      header: '',
+      cell: (info) => (
+        <img src={`${config.BUCKET_URL}${info.getValue()}`} alt = "Voucher" className="w-full max-h-[40px] min-w-[30px] rounded-lg"/>
+      ),
     }),
-    columnHelper.accessor('created_at', {
-      header: 'Created At',
+    columnHelper.accessor('transaction_number', {
+      header: 'Transaction Number',
       cell: (info) => info.getValue(),
     }),
     columnHelper.accessor('date', {
@@ -36,20 +41,18 @@ const VoucherTable = () => {
       header: 'Client',
       cell: (info) => info.getValue(),
     }),
-    columnHelper.accessor('img_url', {
-      header: 'Image',
-      cell: (info) => info.getValue(),
+    columnHelper.accessor('created_at', {
+      header: 'Created At',
+      cell: (info) => moment(info.getValue()).format('DD/MM/YYYY HH:mm:ss'),
     }),
     columnHelper.accessor('id', {
       header: 'Actions',
       cell: (info) => (
         <div className="flex flex-row gap-2">
-          <button className="bg-button hover:bg-buttonText text-white font-medium py-2 px-4 rounded-lg" onClick={() => console.log('Edit', info.getValue())}>
-            Edit
-          </button>
           <button className="bg-button hover:bg-buttonText text-white font-medium py-2 px-4 rounded-lg" onClick={() => console.log('Delete', info.getValue())}>
             Delete
           </button>
+          <DeleteVaucherDialog voucher={info.row.original} />
         </div>
       ),
     }),

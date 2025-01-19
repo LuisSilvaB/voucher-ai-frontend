@@ -73,8 +73,15 @@ const VoucherAiDialog = ({ id }: DialogProps) => {
           logger: (m) => console.log(m),
         }
       )
-      if (!text) return;
-      dispatch(scanVoucherFeature(text))
+      if (!text || !file) return;
+
+      console.log(text, file)
+      dispatch(
+        scanVoucherFeature({
+          text,
+          file,
+        })
+      );
     } catch (error) {
       console.error(error);
     }
