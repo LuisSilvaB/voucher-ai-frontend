@@ -6,22 +6,23 @@ import { Button } from '@/components/ui/button'
 import { DialogDescription } from '@radix-ui/react-dialog';
 import Icon from '@/components/ui/icon'
 
-import { useDispatch } from 'react-redux';
-import { AppDispatch } from '@/redux/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '@/redux/store';
 
 import useToggle from '@/app/hooks/useToggle.hook';
-import Tesseract from 'tesseract.js';
 import { FormProvider, useForm } from 'react-hook-form';
 import { VoucherType } from '@/app/types/voucher.type';
 import VoucherAiDialogFile from './voucherAiDialogFile';
 import VoucherAiDialogForm from './voucherAiDialogForm/voucherAiDialogForm';
+import { createVoucherFeature } from '@/app/features/voucher.feature';
+import { toast } from 'react-toastify';
 
 type DialogProps = {
   voucher?: VoucherType;
 };
 
 const VoucherAiDialog = ({ voucher }: DialogProps) => {
-
+  const loadingCreateVoucher = useSelector((state: RootState) => state.voucher.loadingCreateVoucher)
   const formMethods = useForm<{
     voucher:VoucherType
     file: File | null
@@ -36,6 +37,7 @@ const VoucherAiDialog = ({ voucher }: DialogProps) => {
         tax_amount: 0,
         client: "",
         img_name: "",
+        igv: 0,
         ITEMS: [],
       },
       file: null,
@@ -48,26 +50,32 @@ const VoucherAiDialog = ({ voucher }: DialogProps) => {
 
   const toggleDialog = useToggle(false)
 
-  const onScanFile = async () => {
+  const onCreateVoucher = async () => {
     try {
-      if (!formMethods.watch("file")) return;
-      const { data: { text } } = await Tesseract.recognize(
-        formMethods.watch("file")!,
-        'spa+eng',
-        {
-          logger: (m) => console.log(m),
-        }
+      toast.loading("Creating Voucher...", {
+        toastId: "create-voucher",
+        position: "bottom-right",
+      })
+      if (!formMethods.watch("file")) return
+      await dispatch(
+        createVoucherFeature({
+          voucher: {
+            ...formMethods.getValues("voucher"),
+            date: new Date( formMethods.getValues("voucher.date") ).toISOString(),
+          },
+          File: formMethods.watch("file")!,
+        })
       )
-      if (!text || !formMethods.watch("file")) return;
-
-      // dispatch(
-      //   scanVoucherFeature({
-      //     text,
-      //     file: formMethods.watch("file")!,
-      //   })
-      // );
+      formMethods.reset()
+      toggleDialog.onClose()
+      toast.dismiss("create-voucher");
+      toast.success("Voucher created successfully!", {
+        toastId: "create-voucher-done",
+        position: "bottom-right",
+      });
     } catch (error) {
       console.error(error);
+      toast.dismiss("create-voucher");
     }
   }
 
@@ -157,8 +165,11 @@ const VoucherAiDialog = ({ voucher }: DialogProps) => {
 
           <DialogFooter className='flex flex-col h-fit'>
             <Button variant={"secondary"}>Cancel</Button>
-            <Button variant={"default"} className="bg-button hover:bg-buttonText" onClick={onScanFile}>
-              Scan
+            <Button variant={"default"} className="bg-button hover:bg-buttonText" onClick={onCreateVoucher} disabled={loadingCreateVoucher}>
+              {loadingCreateVoucher ? <Icon remixIconClass='ri-loader-line' size='md' color='white' className='animate-spin' /> : null}
+              <span>
+                Create
+              </span>
             </Button>
           </DialogFooter>
         </DialogContent>

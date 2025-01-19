@@ -4,18 +4,19 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import { config } from "@/config/api"
 import { VoucherType } from "../types/voucher.type"
 
-export const scanVoucherTesseractFeature = createAsyncThunk(
+export const scanVoucherTesseractGroqFeature = createAsyncThunk(
   "voucher/scanVoucherFeature",
   async (
     { text }: { text: string },
     { rejectWithValue }
   ) => {
     try {
-      const formData = new FormData();
-      formData.append("text", text);
-      const response = await fetch(`${config.BACK_URL}/voucher/scan-tesseract`, {
+      const response = await fetch(`${config.BACK_URL}/voucher/scan-tesseract-groq`, {
         method: "POST",
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
       });
 
       if (!response.ok) {
@@ -29,6 +30,34 @@ export const scanVoucherTesseractFeature = createAsyncThunk(
     }
   }
 );
+
+export const scanVoucherTesseractTogetherFeature = createAsyncThunk(
+  "voucher/scanVoucherTesseractTogetherFeature",
+  async (
+    { text }: { text: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await fetch(`${config.BACK_URL}/voucher/scan-tesseract-together`, {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 
 export const createVoucherFeature = createAsyncThunk(
   "voucher/createVoucherFeature",
@@ -135,13 +164,13 @@ const voucherSlice = createSlice({
     builder.addCase(getVouchersFeature.rejected, (state) => {
       state.loading = false
     })
-    builder.addCase(scanVoucherTesseractFeature.pending, (state) => {
+    builder.addCase(scanVoucherTesseractGroqFeature.pending, (state) => {
       state.loadingScanTesseract = true;
     })
-    builder.addCase(scanVoucherTesseractFeature.fulfilled, (state) => {
+    builder.addCase(scanVoucherTesseractGroqFeature.fulfilled, (state) => {
       state.loadingScanTesseract = false;
     })
-    builder.addCase(scanVoucherTesseractFeature.rejected, (state) => {
+    builder.addCase(scanVoucherTesseractGroqFeature.rejected, (state) => {
       state.loadingScanTesseract = false;
     })
     builder.addCase(createVoucherFeature.pending, (state) => {

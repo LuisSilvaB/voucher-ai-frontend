@@ -136,6 +136,25 @@ const VoucherAiDialogForm = () => {
           )}
         />
       </div>
+      <FormField
+        control={control}
+        name="voucher.igv"
+        render={({ field }) => (
+          <FormItem className="w-full">
+            <FormLabel>IGV</FormLabel>
+            <FormControl>
+              <Input
+                value={field.value}
+                onChange={field.onChange}
+                type="number"
+                placeholder=""
+                className="min-w-56 border"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
       <div className="flex flex-col w-full h-full">
         <div className="w-full flex justify-between items-center">
           <Label className="mt-3">Products</Label>
@@ -168,17 +187,16 @@ const VoucherAiDialogForm = () => {
                     variant={"destructive"}
                     size={"icon"}
                     className="bg-button hover:bg-buttonText text-white font-medium py-2 px-4 rounded-lg"
-                    onClick={(e) =>{
+                    onClick={(e) => {
                       e.preventDefault();
-                      e.stopPropagation()
+                      e.stopPropagation();
                       setValue(
                         "voucher.ITEMS",
                         watch("voucher.ITEMS").filter(
                           (product) => product.id !== item.id
                         )
-                      )
-                    }
-                    }
+                      );
+                    }}
                   >
                     <Icon
                       remixIconClass="ri-delete-bin-line"

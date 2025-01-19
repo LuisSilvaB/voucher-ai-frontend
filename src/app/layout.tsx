@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Navbar from '@/components/layout/navbar'
-// import Sidebar from '@/components/layout/sidebar'
 import ReduxProvider from "@/redux/redux.provider";
+import { Toaster } from "@/components/ui/toaster"
+import { ToastContainer } from 'react-toastify';
 import "./globals.css";
 import 'remixicon/fonts/remixicon.css';
 
@@ -38,6 +39,8 @@ export default function RootLayout({
           {children}
         </div>
      </ReduxProvider>
+      <Toaster />
+      <ToastContainer />
       </body>
     </html>
   );

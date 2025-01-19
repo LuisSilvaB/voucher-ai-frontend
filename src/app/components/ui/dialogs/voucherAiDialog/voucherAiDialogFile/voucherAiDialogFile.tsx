@@ -1,4 +1,4 @@
-import { scanVoucherTesseractFeature } from '@/app/features/voucher.feature';
+import { scanVoucherTesseractGroqFeature, scanVoucherTesseractTogetherFeature } from '@/app/features/voucher.feature';
 import { ItemType, VoucherType } from '@/app/types/voucher.type';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
@@ -9,6 +9,8 @@ import { useFormContext } from 'react-hook-form';
 import { useDispatch } from 'react-redux';
 import Tesseract from 'tesseract.js';
 import { v4 as uuidv4 } from 'uuid';
+import VoucherAiPopoverFileTesseract from '../../../popover/voucherAiPopoverFileTesseract';
+import { toast } from 'react-toastify';
 
 type VoucherAiDialogFileProps = {
   isOpen: boolean;
@@ -68,43 +70,80 @@ const VoucherAiDialogFile = ({ isOpen }: VoucherAiDialogFileProps) => {
     setValue("fileUrl", null);
   }
 
-  const onScanByTesseract = async () => {
+  const onScanByTesseract = async (variant: string) => {
     try {
       setLoadingScanTesseract(true);
+      toast.loading(`Scanning Voucher by teseract and ${variant}...`, {
+        toastId: "scan-tesseract",
+        position: "bottom-right",
+      })
+
       if (!watch("file")) return;
+  
       const { data: { text } } = await Tesseract.recognize(
         watch("file")!,
         'spa+eng',
         {
           logger: (m) => console.log(m),
         }
-      )
-      if (!text || !watch("file")) return;
-
-      const data = await dispatch(
-        scanVoucherTesseractFeature({
-          text,
-        })
-      );  
-
-      if (data.payload) {
-        setValue("voucher.transaction_number", data.payload.transaction_number);
-        setValue("voucher.date", data.payload.date);
-        setValue("voucher.vendor", data.payload.vendor);
-        setValue("voucher.tax_amount", data.payload.tax_amount);
-        setValue("voucher.client", data.payload.client);
-        setValue("voucher.id", uuidv4());
-        setValue("voucher.ITEMS", Array.isArray(data.payload.ITEMS) ? data.payload.ITEMS.map((item: ItemType)=>({
-          ...item,
-          id: Math.floor(Math.random() * 1000000),
-        })) : []);
+      );
+  
+      if (!text) return;
+  
+      let response;
+  
+      if (variant === "groq") {
+        response = await dispatch(
+          scanVoucherTesseractGroqFeature({
+            text,
+          })
+        );
+      } else if (variant === "together") {
+        response = await dispatch(
+          scanVoucherTesseractTogetherFeature({
+            text,
+          })
+        );
+      } else {
+        console.warn("Invalid variant provided.");
+        toast.dismiss("scan-tesseract");
+        setLoadingScanTesseract(false);
+        return;
       }
+  
+      const voucher = response.payload;
+  
+      if (voucher) {
+        setValue("voucher.igv", voucher.igv ?? "");
+        setValue("voucher.transaction_number", voucher.transaction_number);
+        setValue("voucher.date", voucher.date);
+        setValue("voucher.vendor", voucher.vendor);
+        setValue("voucher.tax_amount", voucher.tax_amount);
+        setValue("voucher.client", voucher.client);
+        setValue("voucher.id", uuidv4());
+        setValue(
+          "voucher.ITEMS",
+          Array.isArray(voucher.ITEMS)
+            ? voucher.ITEMS.map((item: ItemType) => ({
+                ...item,
+                id: Math.floor(Math.random() * 1000000),
+              }))
+            : []
+        );
+        toast.dismiss("scan-tesseract");
+        toast.success("Voucher scanned successfully!", {
+          toastId: "scan-tesseract-done",
+          position: "bottom-right",
+        });
+      }
+  
       setLoadingScanTesseract(false);
     } catch (error) {
       console.error(error);
       setLoadingScanTesseract(false);
     }
-  }
+  };
+  
   useEffect(() => {
     if (!isOpen) {
       setIsDragging(false);
@@ -126,28 +165,7 @@ const VoucherAiDialogFile = ({ isOpen }: VoucherAiDialogFileProps) => {
               <Icon remixIconClass="ri-qr-scan-line" size="md" color="white" />
               <span>Google Vision</span>
             </Button>
-            <Button
-              variant={"secondary"}
-              size={"default"}
-              className="bg-background hover:bg-buttonText text-black hover:text-white font-medium py-2 px-4 rounded-lg"
-              onClick={onScanByTesseract}
-            >
-              {loadingScanTesseract ? (
-                <Icon
-                  remixIconClass="ri-loader-line"
-                  size="md"
-                  color="white"
-                  className="animate-spin"
-                />
-              ) : (
-                <Icon
-                  remixIconClass="ri-qr-scan-line"
-                  size="md"
-                  color="white"
-                />
-              )}
-              <span>Tesseract</span>
-            </Button>
+            <VoucherAiPopoverFileTesseract loadingTesseract={loadingScanTesseract} onScanByTesseract={onScanByTesseract} />
             <Button
               variant={"destructive"}
               size={"icon"}
