@@ -4,6 +4,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
 import { config } from "@/config/api"
 import { VoucherType } from "../types/voucher.type"
 
+// unused
 export const scanVoucherTesseractGroqFeature = createAsyncThunk(
   "voucher/scanVoucherFeature",
   async (
@@ -31,6 +32,7 @@ export const scanVoucherTesseractGroqFeature = createAsyncThunk(
   }
 );
 
+// unused
 export const scanVoucherTesseractTogetherFeature = createAsyncThunk(
   "voucher/scanVoucherTesseractTogetherFeature",
   async (
@@ -58,15 +60,41 @@ export const scanVoucherTesseractTogetherFeature = createAsyncThunk(
   }
 );
 
+export const scanVoucherTesseractFeature = createAsyncThunk(
+  "voucher/scanVoucherTesseractTogetherFeature",
+  async (
+    { text, model }: { text: string, model: "together" | "groq" | "gemini" },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await fetch(`${config.BACK_URL}/voucher/scan-tesseract`, {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, model }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 export const scanVoucherWithGoogleVisionFeature = createAsyncThunk(
   "voucher/scanVoucherWithGoogleVisionFeature",
   async (
-    { file }: { file: File },  
+    { file, model }: { file: File, model: "together" | "groq" | "gemini" },
     { rejectWithValue }
   ) => {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("model", model);
       const response = await fetch(`${config.BACK_URL}/voucher/scan-google-vision`, {
         method: "POST",
         body: formData,

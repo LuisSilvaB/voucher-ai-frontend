@@ -15,18 +15,19 @@ import Icon from "@/components/ui/icon";
 import useToggle from '@/app/hooks/useToggle.hook';
 
 type VoucherAiPopoverFileTesseractProps = {
+  ocr: "google-vision" | "tesseract";
   loadingTesseract: boolean;
-  onScanByTesseract: (variant: string) => void;
+  onScanByTesseract: (ocr: "google-vision" | "tesseract", model: "groq" | "together" | "gemini") => void;
 };
 
 const VoucherAiPopoverFileTesseract = ({
+  ocr,
   loadingTesseract,
   onScanByTesseract,
 }: VoucherAiPopoverFileTesseractProps) => {
   const togglePopover = useToggle(false);
-  const onScan = async (variant: string) => {
-    console.log("variant", variant);
-    onScanByTesseract(variant);
+  const onScan = async (variant: "google-vision" | "tesseract" , model: "groq" | "together" | "gemini") => {
+    onScanByTesseract(variant, model);
     togglePopover.onClose();  
   }
 
@@ -41,7 +42,7 @@ const VoucherAiPopoverFileTesseract = ({
                 size="default"
                 className="bg-background hover:bg-buttonText text-black hover:text-white font-medium py-2 px-4 rounded-lg"
               >
-                {loadingTesseract ? (
+                {loadingTesseract && ocr === "tesseract" ? (
                   <Icon
                     remixIconClass="ri-loader-line"
                     size="md"
@@ -68,12 +69,28 @@ const VoucherAiPopoverFileTesseract = ({
         </Tooltip>
       </TooltipProvider>
       <PopoverContent className="w-full flex flex-row gap-2 h-auto z-50">
-        <Button variant={"outline"} size={"sm"} onClick={()=>onScan('together')}>
-          <Icon remixIconClass="ri-sparkling-fill"/>
+        <Button
+          variant={"outline"}
+          size={"sm"}
+          onClick={() => onScan("tesseract", "gemini")}
+        >
+          <Icon remixIconClass="ri-sparkling-fill" />
+          <span>Gemini</span>
+        </Button>
+        <Button
+          variant={"outline"}
+          size={"sm"}
+          onClick={() => onScan("tesseract", "together")}
+        >
+          <Icon remixIconClass="ri-sparkling-fill" />
           <span>Together</span>
         </Button>
-        <Button variant={"outline"} size={"sm"} onClick={()=>onScan('groq')}>
-          <Icon remixIconClass='ri-sparkling-fill' />
+        <Button
+          variant={"outline"}
+          size={"sm"}
+          onClick={() => onScan("tesseract", "groq")}
+        >
+          <Icon remixIconClass="ri-sparkling-fill" />
           <span>Groq</span>
         </Button>
       </PopoverContent>
