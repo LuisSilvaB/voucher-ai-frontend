@@ -58,6 +58,29 @@ export const scanVoucherTesseractTogetherFeature = createAsyncThunk(
   }
 );
 
+export const scanVoucherWithGoogleVisionFeature = createAsyncThunk(
+  "voucher/scanVoucherWithGoogleVisionFeature",
+  async (
+    { file }: { file: File },  
+    { rejectWithValue }
+  ) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch(`${config.BACK_URL}/voucher/scan-google-vision`, {
+        method: "POST",
+        body: formData,
+      }); 
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
 
 export const createVoucherFeature = createAsyncThunk(
   "voucher/createVoucherFeature",

@@ -1,4 +1,4 @@
-import { scanVoucherTesseractGroqFeature, scanVoucherTesseractTogetherFeature } from '@/app/features/voucher.feature';
+import { scanVoucherTesseractGroqFeature, scanVoucherTesseractTogetherFeature, scanVoucherWithGoogleVisionFeature } from '@/app/features/voucher.feature';
 import { ItemType, VoucherType } from '@/app/types/voucher.type';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
@@ -21,6 +21,7 @@ const VoucherAiDialogFile = ({ isOpen }: VoucherAiDialogFileProps) => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const dispatch = useDispatch<AppDispatch>()
   const [ loadingScanTesseract, setLoadingScanTesseract ] = React.useState<boolean>(false);
+  const [ loadingScanGoogleVision, setLoadingScanGoogleVision ] = React.useState<boolean>(false);
 
   const {watch, setValue} = useFormContext<{
     voucher:VoucherType
@@ -68,6 +69,49 @@ const VoucherAiDialogFile = ({ isOpen }: VoucherAiDialogFileProps) => {
   const onRemoveFile = () => {
     setValue("file", null);
     setValue("fileUrl", null);
+  }
+
+  const onScanByGoogleVision = async () => {
+    try {
+      setLoadingScanGoogleVision(true);
+      toast.loading(`Scanning Voucher by Google Vision...`, {
+        toastId: "scan-google-vision",
+        position: "bottom-right",
+      })
+
+      if (!watch("file")) return;
+
+      const response = await dispatch(scanVoucherWithGoogleVisionFeature({
+        file: watch("file")!,
+      }))
+
+      if (response.payload) {
+        setValue("voucher.igv", response.payload.igv ?? "");
+        setValue("voucher.transaction_number", response.payload.transaction_number);
+        setValue("voucher.date", response.payload.date);
+        setValue("voucher.vendor", response.payload.vendor);
+        setValue("voucher.tax_amount", response.payload.tax_amount);
+        setValue("voucher.client", response.payload.client);
+        setValue("voucher.id", uuidv4());
+        setValue(
+          "voucher.ITEMS",
+          Array.isArray(response.payload.ITEMS)
+            ? response.payload.ITEMS.map((item: ItemType) => ({
+                ...item,
+                id: Math.floor(Math.random() * 1000000),
+              }))
+            : []
+        );
+        toast.dismiss("scan-google-vision");
+        toast.success("Voucher scanned successfully!", {
+          toastId: "scan-google-vision-done",
+          position: "bottom-right",
+        });
+      }
+
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   const onScanByTesseract = async (variant: string) => {
@@ -160,7 +204,7 @@ const VoucherAiDialogFile = ({ isOpen }: VoucherAiDialogFileProps) => {
               variant={"secondary"}
               size={"default"}
               className="bg-background hover:bg-buttonText text-black hover:text-white font-medium py-2 px-4 rounded-lg"
-              onClick={() => {}}
+              onClick={onScanByGoogleVision}
             >
               <Icon remixIconClass="ri-qr-scan-line" size="md" color="white" />
               <span>Google Vision</span>
