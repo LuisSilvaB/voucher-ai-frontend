@@ -27,6 +27,7 @@ const DeleteVaucherDialog = ({ voucher }: DialogProps) => {
         toastId: "delete-voucher",
         position: "bottom-right",
       })
+      console.log(voucher.id)
       if (!voucher) return;
       await dispatch(
         deleteVoucherFeature({

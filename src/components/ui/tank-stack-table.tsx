@@ -54,7 +54,8 @@ export function TanStackTable<TData>({ data, columns, remixIconClass, emptyMessa
     state: {
       pagination,
       sorting,
-    }
+    },
+    autoResetAll: false,
   });
 
   return (
@@ -193,4 +194,4 @@ export function TanStackTable<TData>({ data, columns, remixIconClass, emptyMessa
   );
 }
 
-export default TanStackTable
+export default React.memo(TanStackTable)

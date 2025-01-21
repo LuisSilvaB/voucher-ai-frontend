@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 
-import { Dialog, DialogFooter, DialogHeader, DialogContent, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogFooter, DialogHeader, DialogContent, DialogTitle, DialogPortal } from '@/components/ui/dialog'
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
 import { DialogDescription } from '@radix-ui/react-dialog';
@@ -14,8 +14,9 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { VoucherType } from '@/app/types/voucher.type';
 import VoucherAiDialogFile from './voucherAiDialogFile';
 import VoucherAiDialogForm from './voucherAiDialogForm/voucherAiDialogForm';
-import { createVoucherFeature } from '@/app/features/voucher.feature';
+import { createVoucherFeature, getVouchersFeature, updateVoucherFeature } from '@/app/features/voucher.feature';
 import { toast } from 'react-toastify';
+import { config } from '@/config/api';
 
 type DialogProps = {
   voucher?: VoucherType;
@@ -23,6 +24,7 @@ type DialogProps = {
 
 const VoucherAiDialog = ({ voucher }: DialogProps) => {
   const loadingCreateVoucher = useSelector((state: RootState) => state.voucher.loadingCreateVoucher)
+  const loadingUpdateVoucher = useSelector((state: RootState) => state.voucher.loadingUpdateVoucher)
   const formMethods = useForm<{
     voucher:VoucherType
     file: File | null
@@ -49,6 +51,13 @@ const VoucherAiDialog = ({ voucher }: DialogProps) => {
 
 
   const toggleDialog = useToggle(false)
+
+  const onToggleDialog = async () => {
+    toggleDialog.onToggle();
+    if(voucher && toggleDialog.isOpen){
+      await dispatch(getVouchersFeature());
+    }
+  }
 
   const onCreateVoucher = async () => {
     try {
@@ -79,6 +88,39 @@ const VoucherAiDialog = ({ voucher }: DialogProps) => {
     }
   }
 
+  const onUpdateVoucher = async () => {
+    try {
+      toast.loading("Updating Voucher...", {
+        toastId: "update-voucher",
+        position: "bottom-right",
+      });
+      await dispatch(
+        updateVoucherFeature({
+          voucher: {
+            ...formMethods.getValues("voucher"),
+            id: voucher?.id ?? '',
+            date: new Date( formMethods.getValues("voucher.date") ).toISOString(),
+          },
+        })
+      )
+      formMethods.reset()
+      toggleDialog.onClose()
+      toast.dismiss("update-voucher");
+      toast.success("Voucher updated successfully!", {
+        toastId: "update-voucher-done",
+        position: "bottom-right",
+      });
+    } catch (error) {
+      console.error(error);
+      toast.dismiss("update-voucher");
+      toast.error("Error updating voucher", {
+        toastId: "update-voucher-error",
+        position: "bottom-right",
+        autoClose: 5000,
+      });
+    }
+  }
+
 
   useEffect(() => {
     if (voucher && toggleDialog.isOpen) {
@@ -93,6 +135,7 @@ const VoucherAiDialog = ({ voucher }: DialogProps) => {
           transaction_number: voucher?.transaction_number,
           vendor: voucher?.vendor,
         },
+        fileUrl: voucher?.img_name ? `${config.BUCKET_URL}${voucher?.img_name}` : null,
       });
     } else if (!voucher && !toggleDialog.isOpen) {
       formMethods.reset();
@@ -101,7 +144,7 @@ const VoucherAiDialog = ({ voucher }: DialogProps) => {
   }, [voucher, toggleDialog.isOpen]);
   return (
     <FormProvider {...formMethods}>
-      <Dialog  open={toggleDialog.isOpen} onOpenChange={toggleDialog.onToggle}>
+      <Dialog open={toggleDialog.isOpen} onOpenChange={onToggleDialog}>
         <TooltipProvider>
           {voucher ? (
             <Tooltip delayDuration={0}>
@@ -109,9 +152,9 @@ const VoucherAiDialog = ({ voucher }: DialogProps) => {
                 <div>
                   <Button
                     onClick={toggleDialog.onOpen}
-                    size={"sm"}
-                    variant="secondary"
-                    className="items-center justify-center rounded-lg bg-button hover:bg-buttonText"
+                    size={"icon"}
+                    variant="outline"
+                    className="items-center justify-center rounded-lg hover:bg-buttonText hover:text-white"
                   >
                     <Icon
                       remixIconClass="ri-pencil-line"
@@ -137,7 +180,11 @@ const VoucherAiDialog = ({ voucher }: DialogProps) => {
                     size={"sm"}
                     className="items-center justify-center rounded-lg bg-button hover:bg-buttonText"
                   >
-                    <Icon remixIconClass="ri-add-line" size="md" color="white" />
+                    <Icon
+                      remixIconClass="ri-add-line"
+                      size="md"
+                      color="white"
+                    />
                     <p className="ml-1">New Voucher</p>
                   </Button>
                 </div>
@@ -151,31 +198,48 @@ const VoucherAiDialog = ({ voucher }: DialogProps) => {
             </Tooltip>
           )}
         </TooltipProvider>
-        <DialogContent className='min-w-[80vw] min-h-[80vh] flex flex-col ga-1'>
-          <DialogHeader>
-            <DialogTitle>{voucher ? "Edit Voucher" : "Add New Voucher"}</DialogTitle>
-            <DialogDescription className="text-gray-600 font-light text-xs">
-              {voucher ? "Edit your voucher" : "Add a new voucher"}
-            </DialogDescription>
-          </DialogHeader>
-          <div className='flex flex-row gap-2 w-full justify-start  flex-1'>
-            <VoucherAiDialogForm />
-            <VoucherAiDialogFile isOpen={toggleDialog.isOpen} />
-          </div>
+        <DialogPortal>
+          <DialogContent className="min-w-[80vw] min-h-[80vh] flex flex-col ga-1">
+            <DialogHeader>
+              <DialogTitle>
+                {voucher ? "Edit Voucher" : "Add New Voucher"}
+              </DialogTitle>
+              <DialogDescription className="text-gray-600 font-light text-xs">
+                {voucher ? "Edit your voucher" : "Add a new voucher"}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col gap-2 w-full justify-start  flex-1 md:flex-row">
+              <VoucherAiDialogForm />
+              <VoucherAiDialogFile
+                isOpen={toggleDialog.isOpen}
+                voucher={voucher}
+              />
+            </div>
 
-          <DialogFooter className='flex flex-col h-fit'>
-            <Button variant={"secondary"}>Cancel</Button>
-            <Button variant={"default"} className="bg-button hover:bg-buttonText" onClick={onCreateVoucher} disabled={loadingCreateVoucher}>
-              {loadingCreateVoucher ? <Icon remixIconClass='ri-loader-line' size='md' color='white' className='animate-spin' /> : null}
-              <span>
-                Create
-              </span>
-            </Button>
-          </DialogFooter>
-        </DialogContent>
+            <DialogFooter className="flex flex-col h-fit">
+              <Button variant={"secondary"}>Cancel</Button>
+              <Button
+                variant={"default"}
+                className="bg-button hover:bg-buttonText"
+                onClick={voucher ? onUpdateVoucher : onCreateVoucher}
+                disabled={voucher ? loadingUpdateVoucher : loadingCreateVoucher}
+              >
+                {loadingUpdateVoucher || loadingCreateVoucher ? (
+                  <Icon
+                    remixIconClass="ri-loader-line"
+                    size="md"
+                    color="white"
+                    className="animate-spin"
+                  />
+                ) : null}
+                <span>{voucher ? "Update" : "Create"}</span>
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </DialogPortal>
       </Dialog>
     </FormProvider>
   );
 }
 
-export default VoucherAiDialog
+export default React.memo(VoucherAiDialog);
