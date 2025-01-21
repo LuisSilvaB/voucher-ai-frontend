@@ -1,4 +1,4 @@
-import { scanVoucherTesseractFeature,  scanVoucherWithGoogleVisionFeature } from '@/app/features/voucher.feature';
+import { scanVoucherGroqVisionFeature, scanVoucherTesseractFeature,  scanVoucherWithGoogleVisionFeature } from '@/app/features/voucher.feature';
 import { ItemType, VoucherType } from '@/app/types/voucher.type';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,7 @@ import { useFormContext } from 'react-hook-form';
 import { useDispatch } from 'react-redux';
 import { v4 as uuidv4 } from 'uuid';
 import { toast } from 'react-toastify';
+import moment from 'moment-timezone';
 import Icon from '@/components/ui/icon';
 import Tesseract from 'tesseract.js';
 import VoucherAiPopoverFileTesseract from '../../../popover/voucherAiPopoverFileTesseract';
@@ -20,7 +21,7 @@ type VoucherAiDialogFileProps = {
 const VoucherAiDialogFile = ({ isOpen }: VoucherAiDialogFileProps) => {
   const [isDragging, setIsDragging] = React.useState<boolean>(false);
   const [ loadingScanVoucher, setLoadingScanVoucher ] = useState<boolean>(false);
-  const [ ocr, setOcr ] = useState<"google-vision" | "tesseract">("google-vision");
+  const [ ocr, setOcr ] = useState<"google-vision" | "tesseract" | "groq-vision">("google-vision");
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const dispatch = useDispatch<AppDispatch>()
 
@@ -73,7 +74,7 @@ const VoucherAiDialogFile = ({ isOpen }: VoucherAiDialogFileProps) => {
   }
 
 
-  const onScanVoucher = async (ocr: "google-vision" | "tesseract" ,model: "groq" | "together" | "gemini") => {
+  const onScanVoucher = async (ocr: "google-vision" | "tesseract" | "groq-vision" ,model: "groq" | "together" | "gemini") => {
     try{
       let response;
       setLoadingScanVoucher(true);
@@ -95,7 +96,11 @@ const VoucherAiDialogFile = ({ isOpen }: VoucherAiDialogFileProps) => {
           }
         );
         response = await dispatch(scanVoucherTesseractFeature({ text: text, model }));
-      } else {
+      } else if (ocr === "groq-vision") {
+        setOcr("groq-vision");
+        response = await dispatch(scanVoucherGroqVisionFeature({ file: watch("file")!, model }));
+      }
+      else {
         console.warn("Invalid ocr provided.");
         toast.dismiss("scan-voucher");
         setLoadingScanVoucher(false);
@@ -105,7 +110,12 @@ const VoucherAiDialogFile = ({ isOpen }: VoucherAiDialogFileProps) => {
       if (response.payload) {
         setValue("voucher.igv", response.payload.igv ?? "");
         setValue("voucher.transaction_number", response.payload.transaction_number);
-        setValue("voucher.date", response.payload.date);
+        setValue(
+          "voucher.date",
+          moment(response.payload.date, ["YYYY-MM-DD", "DD/MM/YYYY"], true).isValid()
+            ? moment(response.payload.date, ["YYYY-MM-DD", "DD/MM/YYYY"]).format("YYYY-MM-DD")
+            : ''
+        );
         setValue("voucher.vendor", response.payload.vendor);
         setValue("voucher.tax_amount", response.payload.tax_amount);
         setValue("voucher.client", response.payload.client);
@@ -143,6 +153,28 @@ const VoucherAiDialogFile = ({ isOpen }: VoucherAiDialogFileProps) => {
       {watch("fileUrl") ? (
         <div className="relative flex justify-end w-full flex-1 overflow-y-auto rounded-lg">
           <div className="sticky w-full flex justify-end top-0 right-0  gap-2 p-2 z-20">
+            <Button
+              variant="secondary"
+              size="default"
+              className="bg-background hover:bg-buttonText text-black hover:text-white font-medium py-2 px-4 rounded-lg"
+              onClick={() => onScanVoucher("groq-vision", "groq")}
+            >
+              {loadingScanVoucher && ocr === "groq-vision" ? (
+                <Icon
+                  remixIconClass="ri-loader-line"
+                  size="md"
+                  color="white"
+                  className="animate-spin"
+                />
+              ) : (
+                <Icon
+                  remixIconClass="ri-qr-scan-line"
+                  size="md"
+                  color="white"
+                />
+              )}
+              <span>Groq Vision</span>
+            </Button>
             <VoucherAiPopoverFileGoogleVision
               ocr={ocr}
               loadingGoogleVision={loadingScanVoucher}

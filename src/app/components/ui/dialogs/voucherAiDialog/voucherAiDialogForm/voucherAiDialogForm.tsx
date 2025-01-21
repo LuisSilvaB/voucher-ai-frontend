@@ -76,12 +76,31 @@ const VoucherAiDialogForm = () => {
             </FormItem>
           )}
         />
-        <FormField
+        {/* <FormField
           control={control}
           name="voucher.tax_amount"
           render={({ field }) => (
             <FormItem className="w-full">
               <FormLabel>Tax Amount</FormLabel>
+              <FormControl>
+                <Input
+                  value={field.value}
+                  onChange={field.onChange}
+                  type="number"
+                  placeholder=""
+                  className="min-w-56 border"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        /> */}
+        <FormField
+          control={control}
+          name="voucher.igv"
+          render={({ field }) => (
+            <FormItem className="w-full">
+              <FormLabel>IGV</FormLabel>
               <FormControl>
                 <Input
                   value={field.value}
@@ -136,31 +155,12 @@ const VoucherAiDialogForm = () => {
           )}
         />
       </div>
-      <FormField
-        control={control}
-        name="voucher.igv"
-        render={({ field }) => (
-          <FormItem className="w-full">
-            <FormLabel>IGV</FormLabel>
-            <FormControl>
-              <Input
-                value={field.value}
-                onChange={field.onChange}
-                type="number"
-                placeholder=""
-                className="min-w-56 border"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
       <div className="flex flex-col w-full h-full">
         <div className="w-full flex justify-between items-center">
           <Label className="mt-3">Products</Label>
           <VoucherAiDialogFormProduct />
         </div>
-        <div className="w-full h-full rounded-lg flex flex-col gap-2 mt-2 overflow-y-auto max-h-[200px]">
+        <div className="w-full h-full rounded-lg flex flex-col gap-2 mt-2 overflow-y-auto max-h-[325px]">
           {watch("voucher.ITEMS").length ? (
             watch("voucher.ITEMS").map((item, index) => (
               <div key={index} className="w-full flex flex-row gap-2">

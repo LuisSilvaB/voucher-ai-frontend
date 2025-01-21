@@ -15,9 +15,9 @@ import Icon from "@/components/ui/icon";
 import useToggle from '@/app/hooks/useToggle.hook';
 
 type VoucherAiPopoverFileTesseractProps = {
-  ocr: "google-vision" | "tesseract";
+  ocr: "google-vision" | "tesseract" | "groq-vision";
   loadingTesseract: boolean;
-  onScanByTesseract: (ocr: "google-vision" | "tesseract", model: "groq" | "together" | "gemini") => void;
+  onScanByTesseract: (ocr: "google-vision" | "tesseract" | "groq-vision", model: "groq" | "together" | "gemini") => void;
 };
 
 const VoucherAiPopoverFileTesseract = ({
@@ -26,7 +26,7 @@ const VoucherAiPopoverFileTesseract = ({
   onScanByTesseract,
 }: VoucherAiPopoverFileTesseractProps) => {
   const togglePopover = useToggle(false);
-  const onScan = async (variant: "google-vision" | "tesseract" , model: "groq" | "together" | "gemini") => {
+  const onScan = async (variant: "google-vision" | "tesseract" | "groq-vision" , model: "groq" | "together" | "gemini") => {
     onScanByTesseract(variant, model);
     togglePopover.onClose();  
   }
