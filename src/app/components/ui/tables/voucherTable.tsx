@@ -19,7 +19,7 @@ const VoucherTable = () => {
           <img
             src={`${config.BUCKET_URL}${info.getValue()}`}
             alt="Voucher"
-            className="w-full max-h-[40px] min-w-[30px] rounded-lg"
+            className="w-full max-h-[40px] max-w-[30px] rounded-sm"
           />
         ) : null,
     }),
